@@ -1,4 +1,4 @@
-const ytDlp = require('yt-dlp-exec');
+const youtubedl = require('youtube-dl-exec');
 
 module.exports = async (req, res) => {
     // Enable CORS for your GitHub Pages site
@@ -17,17 +17,17 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Fetch raw direct streaming URLs from YouTube via yt-dlp
-        const output = await ytDlp(url, {
+        // Extract video information using youtube-dl-exec
+        const output = await youtubedl(url, {
             dumpSingleJson: true,
             noWarnings: true,
             noCallHome: true,
-            noCheckCertificate: true,
+            noCheckCertificates: true,
             preferFreeFormats: true,
             youtubeSkipDashManifest: true
         });
 
-        // Find a combined format (has both video and audio)
+        // Find a format with both audio and video streams
         const format = output.formats.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || output.formats[0];
 
         return res.status(200).json({
@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
             downloadUrl: format.url
         });
     } catch (error) {
-        console.error(error);
+        console.error('Extraction error:', error);
         return res.status(500).json({ error: 'Failed to process video link' });
     }
 };
