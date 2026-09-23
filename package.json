@@ -2,6 +2,6 @@
   "name": "ytdl-backend",
   "version": "1.0.0",
   "dependencies": {
-    "youtube-dl-exec": "^3.1.12"
+    "@distube/ytdl-core": "^4.15.8"
   }
 }
