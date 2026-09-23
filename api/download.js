@@ -1,7 +1,7 @@
-const youtubedl = require('youtube-dl-exec');
+const ytdl = require('@distube/ytdl-core');
 
 module.exports = async (req, res) => {
-    // Enable CORS for your GitHub Pages site
+    // Enable CORS for your GitHub Pages frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,25 +17,29 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Extract video information using youtube-dl-exec
-        const output = await youtubedl(url, {
-            dumpSingleJson: true,
-            noWarnings: true,
-            noCallHome: true,
-            noCheckCertificates: true,
-            preferFreeFormats: true,
-            youtubeSkipDashManifest: true
-        });
+        // Validate YouTube URL format
+        if (!ytdl.validateURL(url)) {
+            return res.status(400).json({ error: 'Invalid YouTube URL provided.' });
+        }
 
-        // Find a format with both audio and video streams
-        const format = output.formats.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || output.formats[0];
+        // Fetch video metadata directly via JS
+        const info = await ytdl.getInfo(url);
+        
+        // Find highest quality format that includes both video and audio
+        const format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'audioandvideo' }) 
+                    || info.formats.find(f => f.hasVideo && f.hasAudio)
+                    || info.formats[0];
+
+        if (!format || !format.url) {
+            return res.status(500).json({ error: 'No downloadable format found for this video.' });
+        }
 
         return res.status(200).json({
-            title: output.title,
+            title: info.videoDetails.title,
             downloadUrl: format.url
         });
     } catch (error) {
         console.error('Extraction error:', error);
-        return res.status(500).json({ error: 'Failed to process video link' });
+        return res.status(500).json({ error: 'Failed to process video link: ' + error.message });
     }
 };
